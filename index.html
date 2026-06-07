@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مبادرة حِلّة بليلة</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:#FDF8F2;color:#2A1810;direction:rtl}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#6D2F2230;border-radius:3px}
+button,input,select,textarea{font-family:'Cairo',sans-serif}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page{animation:fadeIn .2s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1.5s infinite}
+@media print{.no-print{display:none!important}.print-only{display:block!important}}
+.print-only{display:none}
+</style>
+</head>
+<body><div id="root"></div>
+<script type="text/babel">
+const C={brown:"#6D2F22",brownDk:"#4a1f14",orange:"#FFA600",green:"#81CC31",cream:"#FDF8F2",creamDk:"#F5EDE0",white:"#FFFFFF",muted:"#8A6A5E",border:"#E8D8C8",red:"#e53e3e",blue:"#3182ce"};
+const ROLES={
+  admin:    {label:"مدير",         color:"#6D2F22",bg:"#6D2F2218",icon:"👑"},
+  auditor:  {label:"مراقب مالي",   color:"#3182ce",bg:"#3182ce18",icon:"🔍"},
+  finance:  {label:"موظف مالي",    color:"#8B3E2E",bg:"#8B3E2E18",icon:"💼"},
+  contributor:{label:"مساهم",      color:"#FFA600",bg:"#FFA60018",icon:"🤝"},
+  takia:    {label:"موظف تكية",    color:"#81CC31",bg:"#81CC3118",icon:"🍲"},
+};
+
+// Admin & Auditor share same powers
+const SUPER = r => r==="admin"||r==="auditor";
+
+// ══════════════ QURAN & HADITH REMINDERS ══════════════
+const REMINDERS_DB=[
+  {type:"quran", text:"مَّثَلُ الَّذِينَ يُنفِقُونَ أَمْوَالَهُمْ فِي سَبِيلِ اللَّهِ كَمَثَلِ حَبَّةٍ أَنبَتَتْ سَبْعَ سَنَابِلَ فِي كُلِّ سُنبُلَةٍ مِّائَةُ حَبَّةٍ ۗ وَاللَّهُ يُضَاعِفُ لِمَن يَشَاءُ ۗ وَاللَّهُ وَاسِعٌ عَلِيمٌ", ref:"سورة البقرة — الآية ٢٦١"},
+  {type:"quran", text:"لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ ۚ وَمَا تُنفِقُوا مِن شَيْءٍ فَإِنَّ اللَّهَ بِهِ عَلِيمٌ", ref:"سورة آل عمران — الآية ٩٢"},
+  {type:"quran", text:"وَمَا أَنفَقْتُم مِّن شَيْءٍ فَهُوَ يُخْلِفُهُ ۖ وَهُوَ خَيْرُ الرَّازِقِينَ", ref:"سورة سبأ — الآية ٣٩"},
+  {type:"quran", text:"الَّذِينَ يُنفِقُونَ أَمْوَالَهُم بِاللَّيْلِ وَالنَّهَارِ سِرًّا وَعَلَانِيَةً فَلَهُمْ أَجْرُهُمْ عِندَ رَبِّهِمْ وَلَا خَوْفٌ عَلَيْهِمْ وَلَا هُمْ يَحْزَنُونَ", ref:"سورة البقرة — الآية ٢٧٤"},
+  {type:"quran", text:"مَّن ذَا الَّذِي يُقْرِضُ اللَّهَ قَرْضًا حَسَنًا فَيُضَاعِفَهُ لَهُ أَضْعَافًا كَثِيرَةً ۚ وَاللَّهُ يَقْبِضُ وَيَبْسُطُ وَإِلَيْهِ تُرْجَعُونَ", ref:"سورة البقرة — الآية ٢٤٥"},
+  {type:"quran", text:"إِن تُقْرِضُوا اللَّهَ قَرْضًا حَسَنًا يُضَاعِفْهُ لَكُمْ وَيَغْفِرْ لَكُمْ ۚ وَاللَّهُ شَكُورٌ حَلِيمٌ", ref:"سورة التغابن — الآية ١٧"},
+  {type:"quran", text:"وَأَنفِقُوا مِن مَّا رَزَقْنَاكُم مِّن قَبْلِ أَن يَأْتِيَ أَحَدَكُمُ الْمَوْتُ فَيَقُولَ رَبِّ لَوْلَا أَخَّرْتَنِي إِلَىٰ أَجَلٍ قَرِيبٍ فَأَصَّدَّقَ وَأَكُن مِّنَ الصَّالِحِينَ", ref:"سورة المنافقون — الآية ١٠"},
+  {type:"hadith", text:"ما نقصت صدقةٌ من مالٍ، وما زاد اللهُ عبدًا بعفوٍ إلا عزًّا، وما تواضع أحدٌ للهِ إلا رفعه الله", ref:"رواه مسلم — عن أبي هريرة رضي الله عنه"},
+  {type:"hadith", text:"الصدقة تطفئ الخطيئةَ كما يُطفئُ الماءُ النار", ref:"رواه الترمذي وابن ماجه — حديث حسن صحيح"},
+  {type:"hadith", text:"يقول ابن آدم: مالي مالي، وهل لك من مالك إلا ما أكلتَ فأفنيت، أو لبستَ فأبليت، أو تصدقت فأمضيت؟", ref:"رواه مسلم — عن أبي هريرة رضي الله عنه"},
+  {type:"hadith", text:"اتقوا النار ولو بشق تمرة، فمن لم يجد فبكلمة طيبة", ref:"متفق عليه — عن عدي بن حاتم رضي الله عنه"},
+  {type:"hadith", text:"كل سلامى من الناس عليه صدقة كل يوم تطلع فيه الشمس — تعدل بين الاثنين صدقة، وتُعين الرجل في دابته فتحمله عليها صدقة، والكلمة الطيبة صدقة", ref:"متفق عليه — عن أبي هريرة رضي الله عنه"},
+];
+
+function getNotifs(){return DB.get("notifs",[]);}
+function saveNotifs(n){DB.set("notifs",n);}
+
+// Beautiful reminder card shown to contributor
+function ReminderCard({user}){
+  const notifs=getNotifs().filter(n=>!n.readBy?.includes(user.id));
+  const[idx,setIdx]=React.useState(()=>Math.floor(Math.random()*REMINDERS_DB.length));
+  const[adminNotif,setAdminNotif]=React.useState(notifs.length>0?notifs[notifs.length-1]:null);
+  const r=REMINDERS_DB[idx];
+  const isQ=r.type==="quran";
+
+  const dismiss=()=>{
+    if(!adminNotif)return;
+    const all=getNotifs();
+    const upd=all.map(n=>n.id===adminNotif.id?{...n,readBy:[...(n.readBy||[]),user.id]}:n);
+    saveNotifs(upd);setAdminNotif(null);
+  };
+
+  return <div style={{display:"flex",flexDirection:"column",gap:12}}>
+    {/* Admin pushed notification */}
+    {adminNotif&&<div style={{background:`linear-gradient(135deg,#1a3a0a,#0d2005)`,borderRadius:18,padding:"18px 20px",border:`1px solid ${C.green}40`,position:"relative"}}>
+      <div style={{position:"absolute",top:12,left:12}}><button onClick={dismiss} style={{background:"rgba(255,255,255,.1)",border:"none",color:"rgba(255,255,255,.6)",width:24,height:24,borderRadius:"50%",cursor:"pointer",fontSize:12}}>✕</button></div>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <span style={{fontSize:18}}>🔔</span>
+        <span style={{color:C.green,fontWeight:700,fontSize:12}}>تذكير من الإدارة</span>
+        <span style={{color:"rgba(255,255,255,.4)",fontSize:11,marginRight:"auto"}}>{adminNotif.date}</span>
+      </div>
+      <p style={{color:"rgba(255,255,255,.85)",fontSize:13,lineHeight:1.8,margin:"0 0 10px"}}>{adminNotif.message}</p>
+    </div>}
+
+    {/* Rotating Quran/Hadith */}
+    <div style={{background:isQ?`linear-gradient(135deg,#1a0f05,#2d1a08)`:`linear-gradient(135deg,#05151a,#0a2030)`,borderRadius:18,padding:"22px 20px",border:`1px solid ${isQ?C.orange:C.blue}30`,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-20,left:-20,width:120,height:120,borderRadius:"50%",background:isQ?`${C.orange}08`:`${C.blue}08`}}/>
+      <div style={{position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+          <div style={{width:32,height:32,borderRadius:10,background:isQ?`${C.orange}20`:`${C.blue}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{isQ?"📖":"🌙"}</div>
+          <span style={{color:isQ?C.orange:C.blue,fontWeight:700,fontSize:12}}>{isQ?"آية كريمة":"حديث شريف"}</span>
+          <button onClick={()=>setIdx(i=>(i+1)%REMINDERS_DB.length)} style={{marginRight:"auto",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.5)",borderRadius:20,padding:"3px 10px",cursor:"pointer",fontSize:11}}>التالي ←</button>
+        </div>
+        <p style={{color:"rgba(255,255,255,.92)",fontSize:15,lineHeight:2.1,margin:"0 0 12px",fontFamily:"'Amiri','Cairo',serif",textAlign:"center",direction:"rtl"}}>
+          {isQ&&<span style={{color:isQ?C.orange:C.blue,fontSize:13}}>﴿ </span>}
+          {r.text}
+          {isQ&&<span style={{color:isQ?C.orange:C.blue,fontSize:13}}> ﴾</span>}
+        </p>
+        <div style={{textAlign:"center",color:isQ?"rgba(255,166,0,.7)":"rgba(49,130,206,.7)",fontSize:12,fontWeight:600}}>— {r.ref}</div>
+      </div>
+    </div>
+  </div>;
+}
+
+// Admin: Send reminders page
+function SendReminders(){
+  const[msg,setMsg]=React.useState("");const[sent,setSent]=React.useState(false);
+  const[notifs,setNotifsLocal]=React.useState(getNotifs());
+  const[toast,show]=useToast();const[confirmDel,setConfirmDel]=React.useState(null);
+  const now=new Date();
+  const monthAr=now.toLocaleDateString("ar-SA",{year:"numeric",month:"long"});
+  const TEMPLATES=[
+    `بسم الله الرحمن الرحيم\n\nأخي الكريم، تذكّرك إدارة مبادرة حِلّة بليلة بأن شهر ${monthAr} قد حلّ، ونأمل في استلام مساهمتك الشهرية الكريمة.\n\nجزاك الله خيراً على دعمك المستمر لهذه المبادرة الإنسانية.`,
+    `السلام عليكم ورحمة الله وبركاته\n\nنُذكّركم بموعد سداد تعهدات شهر ${monthAr}.\n\nكل ريال تنفقه في سبيل الله هو صدقة جارية تنفعك في الدنيا والآخرة.\n\nبارك الله فيكم وفي أموالكم.`,
+    `أخي المساهم الكريم،\n\nمع مطلع شهر ${monthAr} الجديد، نتطلع إلى استلام مساهمتك للاستمرار في تقديم الوجبات للمحتاجين.\n\nيُسعدنا أن نعلمك بأن مبادرتنا قدمت وجبات كثيرة بفضل تعاونكم الكريم.\n\nجعل الله إنفاقكم في ميزان حسناتكم.`,
+  ];
+
+  const send=()=>{
+    if(!msg.trim()){show("اكتب رسالة التذكير","warn");return;}
+    const nr={id:"notif-"+Date.now(),message:msg,date:new Date().toISOString().slice(0,10),sentBy:"الإدارة",readBy:[]};
+    const upd=[...notifs,nr];saveNotifs(upd);setNotifsLocal(upd);
+    setMsg("");setSent(true);show("✅ تم إرسال التذكير لجميع المساهمين");
+    setTimeout(()=>setSent(false),3000);
+  };
+
+  const del=id=>{const upd=notifs.filter(n=>n.id!==id);saveNotifs(upd);setNotifsLocal(upd);setConfirmDel(null);show("🗑️ تم الحذف");};
+  const contributors=getUsers().filter(u=>u.role==="contributor");
+
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    {confirmDel&&<Confirm title="حذف التذكير" body="حذف هذا التذكير؟" onOk={()=>del(confirmDel)} onCancel={()=>setConfirmDel(null)}/>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <h2 style={{margin:0,color:C.brown,fontSize:18}}>🔔 إرسال التذكيرات</h2>
+      <Badge label={`${contributors.length} مساهم`} color={C.orange}/>
+    </div>
+
+    <div style={{background:`${C.orange}12`,border:`1px solid ${C.orange}30`,borderRadius:14,padding:"12px 16px",fontSize:13,color:"#7a4500",lineHeight:1.8}}>
+      📢 التذكير سيظهر لجميع المساهمين عند دخولهم للمنصة مع آية كريمة أو حديث شريف يحثّ على الإنفاق
+    </div>
+
+    <Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>✍️ اكتب رسالة التذكير</h3>
+      <div style={{marginBottom:12}}>
+        <label style={{display:"block",fontSize:12,fontWeight:700,color:C.brown,marginBottom:8}}>قوالب جاهزة:</label>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {TEMPLATES.map((t,i)=><button key={i} onClick={()=>setMsg(t)} style={{background:C.creamDk,border:`1px solid ${C.border}`,borderRadius:20,padding:"5px 14px",fontSize:12,color:C.brown,cursor:"pointer",fontWeight:600}}>قالب {i+1}</button>)}
+        </div>
+      </div>
+      <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="اكتب رسالة التذكير هنا، أو اختر قالباً جاهزاً أعلاه..." style={{width:"100%",minHeight:140,padding:"12px",border:`2px solid ${C.border}`,borderRadius:12,fontSize:13,background:C.cream,outline:"none",resize:"vertical",lineHeight:1.8,direction:"rtl"}}/>
+      <div style={{marginTop:12}}>
+        <Solid bg={sent?C.green:C.orange} color={sent?C.white:C.brown} onClick={send} disabled={!msg.trim()} full style={{padding:"12px",fontSize:14}}>
+          {sent?"✅ تم الإرسال!":"📤 إرسال التذكير لجميع المساهمين"}
+        </Solid>
+      </div>
+    </Card>
+
+    {/* Hadiths preview */}
+    <Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📖 الآيات والأحاديث المعروضة للمساهمين</h3>
+      <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:300,overflowY:"auto"}}>
+        {REMINDERS_DB.map((r,i)=><div key={i} style={{background:r.type==="quran"?`${C.orange}08`:`${C.blue}08`,border:`1px solid ${r.type==="quran"?C.orange:C.blue}25`,borderRadius:12,padding:"12px 14px"}}>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
+            <span style={{fontSize:14}}>{r.type==="quran"?"📖":"🌙"}</span>
+            <span style={{fontSize:11,fontWeight:700,color:r.type==="quran"?C.orange:C.blue}}>{r.type==="quran"?"آية كريمة":"حديث شريف"}</span>
+          </div>
+          <p style={{fontSize:12,color:C.text,lineHeight:1.9,margin:"0 0 6px",fontFamily:"'Amiri','Cairo',serif"}}>{r.text}</p>
+          <div style={{fontSize:11,color:C.muted}}>— {r.ref}</div>
+        </div>)}
+      </div>
+    </Card>
+
+    {/* Sent history */}
+    {notifs.length>0&&<Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📋 سجل التذكيرات المرسلة</h3>
+      {notifs.slice().reverse().map((n,i,arr)=><div key={i} style={{padding:"12px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:12,color:C.muted,marginBottom:4}}>📅 {n.date}</div>
+            <div style={{fontSize:13,color:C.text,lineHeight:1.7,whiteSpace:"pre-line"}}>{n.message.slice(0,120)}{n.message.length>120?"...":""}</div>
+            <div style={{fontSize:11,color:C.green,marginTop:4}}>قرأه {n.readBy?.length||0} مساهم</div>
+          </div>
+          <Outline color={C.red} onClick={()=>setConfirmDel(n.id)} sm style={{marginRight:10}}>🗑️</Outline>
+        </div>
+      </div>)}
+    </Card>}
+  </div>;
+}
+
+
+const DB={
+  get:(k,d)=>{try{const v=localStorage.getItem("hb4_"+k);return v!=null?JSON.parse(v):d}catch{return d}},
+  set:(k,v)=>{try{localStorage.setItem("hb4_"+k,JSON.stringify(v))}catch(e){}},
+};
+const DA={id:"admin-0",name:"المدير",phone:"0000",pin:"1234",role:"admin",active:true,createdAt:"2026-01-01"};
+const getUsers=()=>{const u=DB.get("users",[]);if(!u.length){DB.set("users",[DA]);return[DA];}return u;};
+const saveUsers=u=>DB.set("users",u);
+const getReceipts=()=>DB.get("receipts",[]);   const saveReceipts=r=>DB.set("receipts",r);
+const getInvoices=()=>DB.get("invoices",[]);   const saveInvoices=i=>DB.set("invoices",i);
+const getMeals=()=>DB.get("meals",[]);         const saveMeals=m=>DB.set("meals",m);
+const getRegs=()=>DB.get("registrations",[]); const saveRegs=r=>DB.set("registrations",r);
+
+// File helpers
+function readFile(file){return new Promise((res,rej)=>{if(!file){res(null);return;}if(file.size>5*1024*1024){rej(new Error("حجم الملف أكبر من 5MB"));return;}const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>rej(new Error("فشل القراءة"));r.readAsDataURL(file);});}
+function compressImg(b64){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");const ratio=Math.min(1,800/img.width);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.75));};img.onerror=()=>res(b64);img.src=b64;});}
+
+// UI atoms
+const Card=({children,style={}})=><div style={{background:C.white,borderRadius:18,boxShadow:"0 2px 18px rgba(109,47,34,0.07)",border:`1px solid ${C.border}`,padding:22,...style}}>{children}</div>;
+const Badge=({label,color})=><span style={{background:color+"18",color,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,border:`1px solid ${color}30`,whiteSpace:"nowrap"}}>{label}</span>;
+const Solid=({children,bg=C.brown,color=C.white,onClick,style={},disabled,full,sm})=><button onClick={onClick} disabled={disabled} style={{background:disabled?"#ccc":bg,color,border:"none",padding:sm?"7px 14px":"10px 20px",borderRadius:11,cursor:disabled?"not-allowed":"pointer",fontWeight:700,fontSize:sm?12:13,width:full?"100%":"auto",...style}}>{children}</button>;
+const Outline=({children,color=C.brown,onClick,style={},disabled,full,sm})=><button onClick={onClick} disabled={disabled} style={{background:"transparent",color,border:`2px solid ${color}`,padding:sm?"6px 12px":"9px 18px",borderRadius:11,cursor:disabled?"not-allowed":"pointer",fontWeight:700,fontSize:sm?12:13,width:full?"100%":"auto",...style}}>{children}</button>;
+function Inp({label,required,hint,...p}){const[f,setF]=React.useState(false);return<div style={{marginBottom:14}}>{label&&<label style={{display:"block",fontSize:12,fontWeight:700,color:C.brown,marginBottom:5}}>{label}{required&&<span style={{color:C.red}}> *</span>}</label>}<input {...p} onFocus={e=>{setF(true);p.onFocus?.(e)}} onBlur={e=>{setF(false);p.onBlur?.(e)}} style={{width:"100%",padding:"10px 13px",border:`2px solid ${f?C.orange:C.border}`,borderRadius:11,fontSize:13,outline:"none",background:C.cream,boxSizing:"border-box",...p.style}}/>{hint&&<div style={{fontSize:11,color:C.muted,marginTop:4}}>{hint}</div>}</div>;}
+function Sel({label,children,...p}){return<div style={{marginBottom:14}}>{label&&<label style={{display:"block",fontSize:12,fontWeight:700,color:C.brown,marginBottom:5}}>{label}</label>}<select {...p} style={{width:"100%",padding:"10px 13px",border:`2px solid ${C.border}`,borderRadius:11,fontSize:13,background:C.cream,boxSizing:"border-box"}}>{children}</select></div>;}
+function Toast({msg,type="success"}){if(!msg)return null;const bg=type==="success"?C.green:type==="error"?C.red:type==="warn"?C.orange:C.blue;return<div style={{position:"fixed",top:66,right:16,zIndex:9999,background:bg,color:"#fff",padding:"11px 20px",borderRadius:12,fontWeight:700,fontSize:13,boxShadow:"0 4px 20px rgba(0,0,0,.25)",maxWidth:320}}>{msg}</div>;}
+function useToast(){const[t,setT]=React.useState({msg:"",type:"success"});const show=(msg,type="success")=>{setT({msg,type});setTimeout(()=>setT({msg:"",type:"success"}),2800);};return[t,show];}
+function Confirm({title,body,onOk,onCancel}){return<div style={{position:"fixed",inset:0,zIndex:3000,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}><Card style={{width:"100%",maxWidth:360,textAlign:"center",padding:28}}><div style={{fontSize:40,marginBottom:12}}>🗑️</div><h3 style={{color:C.brown,fontSize:16,fontWeight:800,marginBottom:8}}>{title}</h3><p style={{color:C.muted,fontSize:13,marginBottom:22,lineHeight:1.7}}>{body}</p><div style={{display:"flex",gap:10}}><Solid bg={C.red} onClick={onOk} full>تأكيد</Solid><Outline color={C.muted} onClick={onCancel} full>إلغاء</Outline></div></Card></div>;}
+function ImgView({src,onClose}){if(!src)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,zIndex:4000,background:"rgba(0,0,0,.88)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,cursor:"zoom-out"}}><div style={{position:"relative",maxWidth:"95%",maxHeight:"90vh"}}><img src={src} style={{maxWidth:"100%",maxHeight:"85vh",borderRadius:12,objectFit:"contain"}} alt=""/><button onClick={onClose} style={{position:"absolute",top:-12,left:-12,width:30,height:30,borderRadius:"50%",background:C.white,border:"none",fontSize:15,cursor:"pointer",fontWeight:700,color:C.brown}}>✕</button><div style={{textAlign:"center",marginTop:8,color:"rgba(255,255,255,.5)",fontSize:11}}>اضغط للإغلاق</div></div></div>;}
+function Modal({title,children,onClose}){return<div style={{position:"fixed",inset:0,zIndex:2000,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><Card style={{width:"100%",maxWidth:440,maxHeight:"92vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><h3 style={{color:C.brown,fontSize:16,fontWeight:800}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.muted}}>✕</button></div>{children}</Card></div>;}
+function StatusBadge({status}){const m={pending:{l:"⏳ قيد المراجعة",c:C.orange},approved:{l:"✅ مقبول",c:C.green},rejected:{l:"❌ مرفوض",c:C.red}};const s=m[status]||m.pending;return<Badge label={s.l} color={s.c}/>;}
+const Pot=({size=38})=><svg width={size} height={size} viewBox="0 0 100 100" fill="none"><rect x="20" y="36" width="60" height="44" rx="9" fill={C.brown}/><rect x="13" y="46" width="9" height="19" rx="4.5" fill={C.brownDk}/><rect x="78" y="46" width="9" height="19" rx="4.5" fill={C.brownDk}/><rect x="24" y="28" width="52" height="13" rx="6.5" fill={C.brown}/><circle cx="50" cy="27" r="5.5" fill={C.brownDk}/><ellipse cx="41" cy="59" rx="11" ry="13" fill={C.orange} opacity=".92"/><ellipse cx="59" cy="59" rx="11" ry="13" fill={C.green} opacity=".92"/><circle cx="50" cy="52" r="5.5" fill="white" opacity=".95"/><path d="M43 19Q45 12 43 7" stroke={C.brownDk} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M50 17Q52 10 50 5" stroke={C.brownDk} strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M57 19Q59 12 57 7" stroke={C.brownDk} strokeWidth="2.5" strokeLinecap="round" fill="none"/></svg>;
+function FileBox({onFile,preview,label="صورة المستند",color=C.orange}){
+  const[drag,setDrag]=React.useState(false);const[loading,setLoading]=React.useState(false);
+  const handle=async(file)=>{if(!file)return;setLoading(true);try{const b=await readFile(file);const c=file.type.startsWith("image/")?await compressImg(b):b;onFile(c,file.name);}catch(e){alert(e.message);}setLoading(false);};
+  return<div style={{marginBottom:18}}><label style={{display:"block",fontSize:12,fontWeight:700,color:C.brown,marginBottom:8}}>{label}</label>
+    {preview?<div style={{position:"relative",border:`2px solid ${color}`,borderRadius:12,overflow:"hidden"}}>{preview.startsWith("data:image")?<img src={preview} style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block"}} alt=""/>:<div style={{padding:18,textAlign:"center",color:C.brown,fontSize:13}}>📄 ملف PDF محمّل</div>}<button onClick={()=>onFile(null,null)} style={{position:"absolute",top:6,left:6,background:C.red,color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:12,fontWeight:700}}>✕</button></div>:
+    <label onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);handle(e.dataTransfer.files[0]);}} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`2px dashed ${drag?color:C.border}`,borderRadius:12,padding:"24px 16px",textAlign:"center",cursor:"pointer",background:drag?`${color}08`:C.cream}}>
+      <input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>handle(e.target.files[0])}/>
+      <div style={{fontSize:28,marginBottom:6}}>{loading?"⏳":"📎"}</div>
+      <div style={{color:C.brown,fontWeight:700,fontSize:13}}>{loading?"جاري معالجة الملف...":"اضغط أو اسحب الملف هنا"}</div>
+      <div style={{color:C.muted,fontSize:11,marginTop:3}}>صور أو PDF — حد أقصى 5MB</div>
+    </label>}
+  </div>;
+}
+
+// ══════════════ LOGIN / REGISTER ══════════════
+function LoginPage({onLogin}){
+  const[mode,setMode]=React.useState("login");
+  const[phone,setPhone]=React.useState("");const[pin,setPin]=React.useState("");
+  const[err,setErr]=React.useState("");const[loading,setLoading]=React.useState(false);
+  const[regForm,setRegForm]=React.useState({name:"",phone:"",pin:"",pin2:"",note:""});
+  const[regDone,setRegDone]=React.useState(false);
+  const rf=(k,v)=>setRegForm(p=>({...p,[k]:v}));
+
+  const handleLogin=()=>{
+    if(!phone||!pin){setErr("أدخل رقم الهاتف والرمز");return;}
+    setLoading(true);setErr("");
+    setTimeout(()=>{
+      const u=getUsers().find(x=>x.phone===phone&&x.pin===pin&&x.active!==false);
+      if(u)onLogin(u);else setErr("❌ بيانات الدخول غير صحيحة");
+      setLoading(false);
+    },600);
+  };
+
+  const handleRegister=()=>{
+    if(!regForm.name.trim()||!regForm.phone.trim()||!regForm.pin.trim()){setErr("أكمل الحقول المطلوبة");return;}
+    if(regForm.pin!==regForm.pin2){setErr("الرمزان غير متطابقين");return;}
+    if(regForm.pin.length<4){setErr("الرمز 4 أرقام على الأقل");return;}
+    const users=getUsers();
+    if(users.find(u=>u.phone===regForm.phone)){setErr("رقم الهاتف مسجّل مسبقاً");return;}
+    const regs=getRegs();
+    if(regs.find(r=>r.phone===regForm.phone&&r.status==="pending")){setErr("طلبك قيد المراجعة بالفعل");return;}
+    const nr={id:"reg-"+Date.now(),name:regForm.name,phone:regForm.phone,pin:regForm.pin,note:regForm.note,status:"pending",createdAt:new Date().toISOString().slice(0,10)};
+    saveRegs([...regs,nr]);setRegDone(true);setErr("");
+  };
+
+  if(regDone)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20,background:`linear-gradient(150deg,${C.cream},${C.creamDk})`}}>
+    <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+      <div style={{fontSize:64,marginBottom:16}}>⏳</div>
+      <h2 style={{color:C.brown,margin:"0 0 10px"}}>طلبك قيد المراجعة</h2>
+      <p style={{color:C.muted,fontSize:13,lineHeight:1.8,marginBottom:24}}>تم إرسال طلب تسجيلك للمدير والمراقب المالي<br/>ستتمكن من الدخول بعد الموافقة عليه</p>
+      <Solid bg={C.orange} color={C.brown} onClick={()=>{setRegDone(false);setMode("login");setRegForm({name:"",phone:"",pin:"",pin2:"",note:""});}}>العودة لصفحة الدخول</Solid>
+    </div>
+  </div>;
+
+  return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20,background:`linear-gradient(150deg,${C.cream},${C.creamDk})`}}>
+    <div style={{width:"100%",maxWidth:420}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:74,height:74,borderRadius:22,background:C.brown,marginBottom:14,boxShadow:`0 8px 32px ${C.brown}40`}}><Pot size={50}/></div>
+        <h1 style={{color:C.brown,fontSize:24,fontWeight:800,margin:0}}>حِلّة بليلة</h1>
+        <p style={{color:C.muted,fontSize:13,margin:"4px 0 0"}}>منصة الشفافية الرقمية 2.0</p>
+      </div>
+      <Card>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20}}>
+          {[["login","دخول"],["register","تسجيل جديد"]].map(([v,l])=><button key={v} onClick={()=>{setMode(v);setErr("");}} style={{padding:"10px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:700,fontSize:14,background:mode===v?C.brown:C.creamDk,color:mode===v?C.white:C.muted,transition:"all .2s"}}>{l}</button>)}
+        </div>
+        {mode==="login"?<>
+          <Inp label="رقم الهاتف" placeholder="09XXXXXXXX" value={phone} onChange={e=>setPhone(e.target.value)}/>
+          <Inp label="الرمز السري" type="password" placeholder="••••" value={pin} onChange={e=>setPin(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+          {err&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px",background:`${C.red}10`,borderRadius:8,textAlign:"center"}}>{err}</div>}
+          <Solid bg={C.orange} color={C.brown} onClick={handleLogin} disabled={loading} full style={{padding:"13px",fontSize:15}}>{loading?"جاري التحقق...":"دخول →"}</Solid>
+          <p style={{textAlign:"center",fontSize:11,color:C.muted,marginTop:12}}>ليس لديك حساب؟ <button onClick={()=>{setMode("register");setErr("");}} style={{background:"none",border:"none",color:C.brown,fontWeight:700,cursor:"pointer",fontSize:11}}>سجّل الآن</button></p>
+        </>:<>
+          <div style={{background:`${C.blue}10`,border:`1px solid ${C.blue}30`,borderRadius:12,padding:"10px 14px",fontSize:12,color:C.blue,marginBottom:16}}>ℹ️ سيتم مراجعة طلبك من قِبل المدير أو المراقب المالي قبل تفعيل حسابك</div>
+          <Inp label="الاسم الكامل" required value={regForm.name} onChange={e=>rf("name",e.target.value)} placeholder="اسمك الكامل"/>
+          <Inp label="رقم الهاتف" required value={regForm.phone} onChange={e=>rf("phone",e.target.value)} placeholder="09XXXXXXXX"/>
+          <Inp label="الرمز السري" required type="password" value={regForm.pin} onChange={e=>rf("pin",e.target.value)} placeholder="4 أرقام على الأقل"/>
+          <Inp label="تأكيد الرمز السري" required type="password" value={regForm.pin2} onChange={e=>rf("pin2",e.target.value)} placeholder="أعد إدخال الرمز"/>
+          <Inp label="ملاحظة (اختياري)" value={regForm.note} onChange={e=>rf("note",e.target.value)} placeholder="أي معلومة تساعد في مراجعة طلبك..."/>
+          {err&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px",background:`${C.red}10`,borderRadius:8,textAlign:"center"}}>{err}</div>}
+          <Solid bg={C.brown} color={C.white} onClick={handleRegister} full style={{padding:"13px",fontSize:15}}>إرسال طلب التسجيل</Solid>
+        </>}
+      </Card>
+    </div>
+  </div>;
+}
+
+// ══════════════ REGISTRATION APPROVALS ══════════════
+function RegApprovals({user}){
+  const[regs,setRegs]=React.useState(getRegs());
+  const[filter,setFilter]=React.useState("pending");
+  const[noteModal,setNoteModal]=React.useState(null);const[noteText,setNoteText]=React.useState("");
+  const[toast,show]=useToast();
+
+  const decide=(id,status)=>{
+    const reg=regs.find(r=>r.id===id);
+    if(status==="approved"&&reg){
+      const users=getUsers();
+      const nu={id:"u-"+Date.now(),name:reg.name,phone:reg.phone,pin:reg.pin,role:"contributor",active:true,createdAt:new Date().toISOString().slice(0,10)};
+      saveUsers([...users,nu]);
+    }
+    const upd=regs.map(r=>r.id===id?{...r,status,reviewedBy:user.name,reviewedAt:new Date().toISOString().slice(0,10),rejectNote:status==="rejected"?noteText:""}:r);
+    saveRegs(upd);setRegs(upd);setNoteModal(null);setNoteText("");
+    show(status==="approved"?"✅ تم قبول التسجيل وتفعيل الحساب":"❌ تم رفض الطلب",status==="approved"?"success":"error");
+  };
+
+  const delReg=id=>{const upd=regs.filter(r=>r.id!==id);saveRegs(upd);setRegs(upd);show("🗑️ تم الحذف");};
+  const filtered=regs.filter(r=>filter==="all"||r.status===filter);
+  const pendingCount=regs.filter(r=>r.status==="pending").length;
+
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:14}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    {noteModal&&<Modal title="سبب الرفض" onClose={()=>setNoteModal(null)}><Inp label="سبب الرفض" value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="سبب رفض الطلب..."/><div style={{display:"flex",gap:10}}><Solid bg={C.red} onClick={()=>decide(noteModal,"rejected")} full>تأكيد الرفض</Solid><Outline color={C.muted} onClick={()=>setNoteModal(null)} full>إلغاء</Outline></div></Modal>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <h2 style={{margin:0,color:C.brown,fontSize:18}}>📝 طلبات التسجيل</h2>
+      {pendingCount>0&&<div className="pulse"><Badge label={`${pendingCount} طلب جديد`} color={C.orange}/></div>}
+    </div>
+    <div style={{background:`${C.blue}10`,border:`1px solid ${C.blue}30`,borderRadius:12,padding:"10px 14px",fontSize:13,color:C.blue}}>
+      ℹ️ عند القبول يُفعَّل حساب المساهم تلقائياً ويمكنه الدخول فوراً
+    </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[["pending","⏳ قيد المراجعة"],["approved","✅ مقبولة"],["rejected","❌ مرفوضة"],["all","الكل"]].map(([v,l])=><button key={v} onClick={()=>setFilter(v)} style={{padding:"7px 14px",borderRadius:20,border:`2px solid ${filter===v?C.brown:C.border}`,background:filter===v?C.brown:"transparent",color:filter===v?C.white:C.muted,fontSize:12,fontWeight:600,cursor:"pointer"}}>{l} ({regs.filter(r=>v==="all"||r.status===v).length})</button>)}</div>
+    {filtered.length===0&&<p style={{color:C.muted,textAlign:"center",padding:"30px 0",fontSize:13}}>لا توجد طلبات</p>}
+    {filtered.slice().reverse().map(reg=><Card key={reg.id} style={{border:reg.status==="pending"?`2px solid ${C.orange}30`:""}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:15}}>{reg.name}</div>
+          <div style={{fontSize:12,color:C.muted,marginTop:2}}>📱 {reg.phone} · 📅 {reg.createdAt}</div>
+          {reg.note&&<div style={{fontSize:12,color:C.brown,marginTop:4,background:C.creamDk,padding:"6px 10px",borderRadius:8}}>💬 {reg.note}</div>}
+          {reg.rejectNote&&<div style={{fontSize:11,color:C.red,marginTop:4}}>⚠ سبب الرفض: {reg.rejectNote}</div>}
+          {reg.reviewedBy&&<div style={{fontSize:11,color:C.muted,marginTop:4}}>✍ راجعه: {reg.reviewedBy} · {reg.reviewedAt}</div>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+          <StatusBadge status={reg.status}/>
+          <Outline color={C.red} onClick={()=>delReg(reg.id)} sm>🗑️</Outline>
+        </div>
+      </div>
+      {reg.status==="pending"&&<div style={{display:"flex",gap:8,marginTop:8}}>
+        <Solid bg={C.green} onClick={()=>decide(reg.id,"approved")} style={{flex:1,padding:"9px"}}>✅ قبول وتفعيل الحساب</Solid>
+        <Outline color={C.red} onClick={()=>{setNoteModal(reg.id);setNoteText("");}} style={{flex:1,padding:"9px"}}>❌ رفض</Outline>
+      </div>}
+    </Card>)}
+  </div>;
+}
+
+// ══════════════ DASHBOARD ══════════════
+function Dashboard({user,onNav}){
+  const receipts=getReceipts();const invoices=getInvoices();const meals=getMeals();const regs=getRegs();
+  const pendingR=receipts.filter(r=>r.status==="pending").length;
+  const pendingI=invoices.filter(i=>i.status==="pending").length;
+  const pendingReg=regs.filter(r=>r.status==="pending").length;
+  const totalMeals=meals.reduce((s,m)=>s+parseInt(m.count||0),0);
+  const myR=receipts.filter(r=>r.userId===user.id);
+  const myI=invoices.filter(i=>i.userId===user.id);
+  const myM=meals.filter(m=>m.userId===user.id);
+  const isSuper=SUPER(user.role);
+  const isFinance=user.role==="finance";
+
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:18}}>
+    <div style={{background:`linear-gradient(135deg,${C.brown},${C.brownDk})`,borderRadius:20,padding:"26px 22px",color:C.white,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",left:-40,top:-40,width:180,height:180,borderRadius:"50%",background:`${C.orange}12`}}/>
+      <div style={{position:"relative"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:8,background:`${C.orange}25`,padding:"4px 12px",borderRadius:20,marginBottom:12}}>
+          <span>{ROLES[user.role]?.icon}</span><span style={{color:C.orange,fontSize:12,fontWeight:700}}>{ROLES[user.role]?.label}</span>
+        </div>
+        <h2 style={{margin:"0 0 4px",fontSize:20,fontWeight:800}}>مرحباً، {user.name} 👋</h2>
+        <p style={{margin:0,opacity:.75,fontSize:13}}>مبادرة حِلّة بليلة — نحو خيرٍ ينبض بالتكنولوجيا 🍲</p>
+      </div>
+    </div>
+
+    {(isSuper||isFinance)&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+      {[
+        {icon:"👥",label:"المستخدمون",val:getUsers().filter(u=>u.active!==false).length,color:C.brown},
+        {icon:"🍲",label:"إجمالي الوجبات",val:totalMeals,color:C.green},
+        {icon:"📬",label:"إشعارات قيد المراجعة",val:pendingR,color:C.orange,nav:"approve-receipts"},
+        {icon:"🧾",label:"فواتير قيد المراجعة",val:pendingI,color:"#8B3E2E",nav:"approve-invoices"},
+        ...(isSuper?[{icon:"📝",label:"طلبات تسجيل جديدة",val:pendingReg,color:C.blue,nav:"registrations"}]:[]),
+      ].map((s,i)=><div key={i} onClick={s.nav?()=>onNav(s.nav):null} style={{background:C.white,borderRadius:16,padding:18,textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,.06)",border:`1px solid ${C.border}`,borderBottom:`4px solid ${s.color}`,cursor:s.nav?"pointer":"default"}}>
+        <div style={{fontSize:26,marginBottom:6}}>{s.icon}</div>
+        <div style={{fontSize:22,fontWeight:800,color:s.color}}>{s.val}</div>
+        <div style={{fontSize:11,color:C.muted,marginTop:3}}>{s.label}</div>
+        {s.nav&&s.val>0&&<div style={{fontSize:10,color:s.color,marginTop:4}}>اضغط للمراجعة ←</div>}
+      </div>)}
+    </div>}
+
+    {(isSuper||isFinance)&&<>
+      {pendingReg>0&&isSuper&&<Card style={{border:`2px solid ${C.blue}40`,cursor:"pointer",padding:"14px 18px"}} onClick={()=>onNav("registrations")}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:40,height:40,borderRadius:12,background:`${C.blue}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>📝</div><div style={{flex:1}}><div style={{fontWeight:700,color:C.brown,fontSize:14}}>{pendingReg} طلب تسجيل جديد بانتظار مراجعتك</div><div style={{fontSize:12,color:C.muted}}>اضغط للمراجعة والموافقة</div></div><div style={{color:C.blue,fontSize:18}}>←</div></div></Card>}
+      {pendingR>0&&<Card style={{border:`2px solid ${C.orange}40`,cursor:"pointer",padding:"14px 18px"}} onClick={()=>onNav("approve-receipts")}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:40,height:40,borderRadius:12,background:`${C.orange}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🔔</div><div style={{flex:1}}><div style={{fontWeight:700,color:C.brown,fontSize:14}}>{pendingR} إشعار تحويل بانتظار موافقتك</div></div><div style={{color:C.orange,fontSize:18}}>←</div></div></Card>}
+      {pendingI>0&&<Card style={{border:`2px solid ${C.green}40`,cursor:"pointer",padding:"14px 18px"}} onClick={()=>onNav("approve-invoices")}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:40,height:40,borderRadius:12,background:`${C.green}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🧾</div><div style={{flex:1}}><div style={{fontWeight:700,color:C.brown,fontSize:14}}>{pendingI} فاتورة تكية بانتظار موافقتك</div></div><div style={{color:C.green,fontSize:18}}>←</div></div></Card>}
+    </>}
+
+    {user.role==="contributor"&&<>
+      <ReminderCard user={user}/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+        {[{icon:"📤",label:"إشعاراتي",val:myR.length,color:C.brown},{icon:"✅",label:"مقبولة",val:myR.filter(r=>r.status==="approved").length,color:C.green}].map((s,i)=><div key={i} style={{background:C.white,borderRadius:16,padding:18,textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,.06)",border:`1px solid ${C.border}`,borderBottom:`4px solid ${s.color}`}}><div style={{fontSize:26,marginBottom:6}}>{s.icon}</div><div style={{fontSize:22,fontWeight:800,color:s.color}}>{s.val}</div><div style={{fontSize:11,color:C.muted,marginTop:3}}>{s.label}</div></div>)}
+      </div>
+    </>}
+
+    {user.role==="takia"&&<>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+        {[{icon:"🍲",label:"وجبات هذا الشهر",val:myM.filter(m=>m.date?.startsWith(new Date().toISOString().slice(0,7))).reduce((s,m)=>s+parseInt(m.count||0),0),color:C.green},{icon:"🧾",label:"فواتيري",val:myI.length,color:C.brown}].map((s,i)=><div key={i} style={{background:C.white,borderRadius:16,padding:18,textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,.06)",border:`1px solid ${C.border}`,borderBottom:`4px solid ${s.color}`}}><div style={{fontSize:26,marginBottom:6}}>{s.icon}</div><div style={{fontSize:22,fontWeight:800,color:s.color}}>{s.val}</div><div style={{fontSize:11,color:C.muted,marginTop:3}}>{s.label}</div></div>)}
+      </div>
+      {user.takia&&<div style={{background:`${C.green}12`,borderRadius:12,padding:"8px 14px",fontSize:13,color:C.green,fontWeight:700,textAlign:"center"}}>🏪 {user.takia}</div>}
+    </>}
+  </div>;
+}
+
+// ══════════════ USER MANAGEMENT ══════════════
+function UserMgmt({currentUser}){
+  const[users,setUsers]=React.useState(getUsers());const[modal,setModal]=React.useState(null);
+  const[confirmDel,setConfirmDel]=React.useState(null);const[search,setSearch]=React.useState("");
+  const[form,setForm]=React.useState({name:"",phone:"",pin:"",role:"contributor",takia:""});
+  const[toast,show]=useToast();const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const save=()=>{if(!form.name.trim()||!form.phone.trim()||!form.pin.trim()){show("أكمل الحقول المطلوبة","warn");return;}const all=getUsers();
+    if(modal==="add"){if(all.find(u=>u.phone===form.phone)){show("رقم الهاتف مستخدم مسبقاً","error");return;}const nu={id:"u-"+Date.now(),...form,takia:form.takia||undefined,active:true,createdAt:new Date().toISOString().slice(0,10)};saveUsers([...all,nu]);setUsers([...all,nu]);show("✅ تم الإضافة");}
+    else{const upd=all.map(u=>u.id===modal?{...u,...form,takia:form.takia||undefined}:u);saveUsers(upd);setUsers(upd);show("✅ تم التحديث");}setModal(null);};
+  const toggleActive=id=>{if(id===currentUser.id){show("لا يمكن إيقاف حسابك","error");return;}const upd=users.map(u=>u.id===id?{...u,active:u.active===false}:u);saveUsers(upd);setUsers(upd);};
+  const del=id=>{if(id===currentUser.id){show("لا يمكن حذف حسابك","error");return;}const upd=users.filter(u=>u.id!==id);saveUsers(upd);setUsers(upd);setConfirmDel(null);show("🗑️ تم الحذف");};
+  const filtered=users.filter(u=>u.name.includes(search)||u.phone.includes(search));
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:14}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    {confirmDel&&<Confirm title="حذف المستخدم" body={`حذف "${confirmDel.name}"؟`} onOk={()=>del(confirmDel.id)} onCancel={()=>setConfirmDel(null)}/>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,color:C.brown,fontSize:18}}>👤 إدارة المستخدمين</h2><Solid bg={C.orange} color={C.brown} onClick={()=>{setForm({name:"",phone:"",pin:"",role:"contributor",takia:""});setModal("add");}}>+ إضافة</Solid></div>
+    <Inp placeholder="🔍 ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
+    {filtered.map(u=><Card key={u.id} style={{padding:"14px 18px",opacity:u.active===false?.6:1}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}><div style={{width:42,height:42,borderRadius:13,background:ROLES[u.role]?.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{ROLES[u.role]?.icon||"👤"}</div><div><div style={{fontWeight:700,fontSize:14}}>{u.name} {u.active===false&&<Badge label="موقوف" color={C.red}/>}</div><div style={{fontSize:11,color:C.muted}}>{u.phone}{u.takia&&` · ${u.takia}`}</div><Badge label={ROLES[u.role]?.label} color={ROLES[u.role]?.color}/></div></div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <Outline color={C.brown} onClick={()=>{setForm({name:u.name,phone:u.phone,pin:u.pin,role:u.role,takia:u.takia||""});setModal(u.id);}} sm>✏️ تعديل</Outline>
+          {u.id!==currentUser.id&&<><Outline color={u.active===false?C.green:C.orange} onClick={()=>toggleActive(u.id)} sm>{u.active===false?"▶ تفعيل":"⏸ إيقاف"}</Outline><Outline color={C.red} onClick={()=>setConfirmDel(u)} sm>🗑️</Outline></>}
+        </div>
+      </div>
+    </Card>)}
+    {modal&&<Modal title={modal==="add"?"إضافة مستخدم":"تعديل مستخدم"} onClose={()=>setModal(null)}>
+      <Inp label="الاسم الكامل" required value={form.name} onChange={e=>f("name",e.target.value)}/>
+      <Inp label="رقم الهاتف" required value={form.phone} onChange={e=>f("phone",e.target.value)} placeholder="09XXXXXXXX"/>
+      <Inp label="الرمز السري" required type="password" value={form.pin} onChange={e=>f("pin",e.target.value)}/>
+      <Sel label="الدور" value={form.role} onChange={e=>f("role",e.target.value)}>{Object.entries(ROLES).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}</Sel>
+      {form.role==="takia"&&<Inp label="اسم التكية" value={form.takia} onChange={e=>f("takia",e.target.value)} placeholder="مثال: تكية الصحافة"/>}
+      <div style={{display:"flex",gap:10}}><Solid bg={C.orange} color={C.brown} onClick={save} full>💾 حفظ</Solid><Outline color={C.muted} onClick={()=>setModal(null)} full>إلغاء</Outline></div>
+    </Modal>}
+  </div>;
+}
+
+// ══════════════ UPLOAD RECEIPT ══════════════
+function UploadReceipt({user}){
+  const[form,setForm]=React.useState({amount:"",ref:"",date:new Date().toISOString().slice(0,10),note:"",fileData:null,fileName:null});
+  const[done,setDone]=React.useState(false);const[loading,setLoading]=React.useState(false);
+  const[myList,setMyList]=React.useState(()=>getReceipts().filter(r=>r.userId===user.id));
+  const[viewImg,setViewImg]=React.useState(null);const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const submit=()=>{if(!form.amount||!form.ref)return;setLoading(true);setTimeout(()=>{const all=getReceipts();const nr={id:"r-"+Date.now(),userId:user.id,userName:user.name,amount:parseInt(form.amount),ref:form.ref,date:form.date,note:form.note,fileData:form.fileData,status:"pending",createdAt:new Date().toISOString()};const upd=[...all,nr];saveReceipts(upd);setMyList(upd.filter(r=>r.userId===user.id));setDone(true);setLoading(false);},600);};
+  if(done)return<div className="page" style={{textAlign:"center",padding:"50px 20px"}}><div style={{fontSize:60,marginBottom:14}}>✅</div><h2 style={{color:C.green,margin:"0 0 8px"}}>تم رفع إشعارك!</h2><p style={{color:C.muted,fontSize:13}}>سيراجعه الموظف المالي قريباً</p><Solid bg={C.orange} color={C.brown} onClick={()=>{setDone(false);setForm({amount:"",ref:"",date:new Date().toISOString().slice(0,10),note:"",fileData:null,fileName:null});}} style={{marginTop:20}}>رفع إشعار آخر</Solid></div>;
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <ImgView src={viewImg} onClose={()=>setViewImg(null)}/>
+    <h2 style={{margin:0,color:C.brown,fontSize:18}}>📤 رفع إشعار تحويل</h2>
+    <Card>
+      <Inp label="مبلغ التحويل (ج.س)" required type="number" value={form.amount} onChange={e=>f("amount",e.target.value)} placeholder="20000"/>
+      <Inp label="رقم العملية البنكية" required value={form.ref} onChange={e=>f("ref",e.target.value)} placeholder="TXN-XXXXXXX"/>
+      <Inp label="تاريخ التحويل" type="date" value={form.date} onChange={e=>f("date",e.target.value)}/>
+      <Inp label="ملاحظة" value={form.note} onChange={e=>f("note",e.target.value)} placeholder="أي ملاحظة..."/>
+      <FileBox label="صورة إشعار التحويل" color={C.orange} preview={form.fileData} onFile={(d,n)=>setForm(p=>({...p,fileData:d,fileName:n}))}/>
+      <Solid bg={C.orange} color={C.brown} onClick={submit} disabled={loading||!form.amount||!form.ref} full style={{padding:"13px",fontSize:15}}>{loading?"جاري الإرسال...":"إرسال الإشعار ✓"}</Solid>
+    </Card>
+    {myList.length>0&&<Card><h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>سجل إشعاراتي</h3>
+      {myList.slice().reverse().map((r,i,arr)=><div key={i} style={{padding:"12px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:r.fileData?8:0}}><div><div style={{fontWeight:700,fontSize:14,color:C.green}}>{r.amount?.toLocaleString()} ج.س</div><div style={{fontSize:11,color:C.muted}}>{r.date} · {r.ref}</div>{r.financeNote&&<div style={{fontSize:11,color:C.red,marginTop:2}}>⚠ {r.financeNote}</div>}</div><StatusBadge status={r.status}/></div>
+        {r.fileData&&<button onClick={()=>setViewImg(r.fileData)} style={{background:`${C.orange}15`,border:`1px solid ${C.orange}30`,borderRadius:8,padding:"5px 12px",fontSize:11,color:C.brown,cursor:"pointer",fontWeight:600}}>🖼 عرض الإشعار</button>}
+      </div>)}
+    </Card>}
+  </div>;
+}
+
+// ══════════════ LOG MEALS ══════════════
+function LogMeals({user}){
+  const[form,setForm]=React.useState({date:new Date().toISOString().slice(0,10),count:"",note:""});
+  const[list,setList]=React.useState(()=>getMeals().filter(m=>m.userId===user.id));
+  const[confirmDel,setConfirmDel]=React.useState(null);const[toast,show]=useToast();
+  const save=()=>{if(!form.count)return;const all=getMeals();const nm={id:"m-"+Date.now(),userId:user.id,takia:user.takia||"—",date:form.date,count:parseInt(form.count),note:form.note};const upd=[...all,nm];saveMeals(upd);setList(upd.filter(m=>m.userId===user.id));setForm(p=>({...p,count:"",note:""}));show("✅ تم التسجيل");};
+  const del=id=>{const upd=getMeals().filter(m=>m.id!==id);saveMeals(upd);setList(upd.filter(m=>m.userId===user.id));setConfirmDel(null);show("🗑️ تم الحذف");};
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    {confirmDel&&<Confirm title="حذف سجل" body={`حذف ${confirmDel.count} وجبة؟`} onOk={()=>del(confirmDel.id)} onCancel={()=>setConfirmDel(null)}/>}
+    <h2 style={{margin:0,color:C.brown,fontSize:18}}>🍲 تسجيل الوجبات</h2>
+    {user.takia&&<div style={{background:`${C.green}12`,borderRadius:12,padding:"8px 14px",fontSize:13,color:C.green,fontWeight:700}}>🏪 {user.takia}</div>}
+    <Card><Inp label="التاريخ" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/><Inp label="عدد الوجبات" required type="number" value={form.count} onChange={e=>setForm(p=>({...p,count:e.target.value}))} placeholder="مثال: 150"/><Inp label="ملاحظة ميدانية" value={form.note} onChange={e=>setForm(p=>({...p,note:e.target.value}))} placeholder="أي ملاحظة..."/><Solid bg={C.green} onClick={save} disabled={!form.count} full style={{padding:"12px"}}>تسجيل الوجبات ✓</Solid></Card>
+    <Card><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><h3 style={{margin:0,color:C.brown,fontSize:14}}>السجل</h3><Badge label={`الإجمالي: ${list.reduce((s,m)=>s+parseInt(m.count||0),0).toLocaleString()}`} color={C.green}/></div>
+      {list.length===0&&<p style={{color:C.muted,textAlign:"center",fontSize:13,padding:"16px 0"}}>لا توجد سجلات بعد</p>}
+      {list.slice().reverse().map((m,i,arr)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div><div style={{fontSize:13,fontWeight:600}}>{m.date}</div>{m.note&&<div style={{fontSize:11,color:C.muted}}>{m.note}</div>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontWeight:800,fontSize:16,color:C.green}}>{parseInt(m.count).toLocaleString()} وجبة</div><Outline color={C.red} onClick={()=>setConfirmDel(m)} sm>🗑️</Outline></div>
+      </div>)}
+    </Card>
+  </div>;
+}
+
+// ══════════════ UPLOAD INVOICE ══════════════
+function UploadInvoice({user}){
+  const[form,setForm]=React.useState({title:"",amount:"",date:new Date().toISOString().slice(0,10),note:"",fileData:null,fileName:null});
+  const[list,setList]=React.useState(()=>getInvoices().filter(i=>i.userId===user.id));
+  const[done,setDone]=React.useState(false);const[loading,setLoading]=React.useState(false);
+  const[viewImg,setViewImg]=React.useState(null);const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const submit=()=>{if(!form.title||!form.amount)return;setLoading(true);setTimeout(()=>{const all=getInvoices();const ni={id:"i-"+Date.now(),userId:user.id,userName:user.name,takia:user.takia||"—",title:form.title,amount:parseInt(form.amount),date:form.date,note:form.note,fileData:form.fileData,status:"pending",createdAt:new Date().toISOString()};const upd=[...all,ni];saveInvoices(upd);setList(upd.filter(i=>i.userId===user.id));setDone(true);setLoading(false);},600);};
+  if(done)return<div className="page" style={{textAlign:"center",padding:"50px 20px"}}><div style={{fontSize:60,marginBottom:14}}>✅</div><h2 style={{color:C.green,margin:"0 0 8px"}}>تم رفع الفاتورة!</h2><Solid bg={C.green} onClick={()=>{setDone(false);setForm({title:"",amount:"",date:new Date().toISOString().slice(0,10),note:"",fileData:null,fileName:null});}} style={{marginTop:20}}>رفع فاتورة أخرى</Solid></div>;
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <ImgView src={viewImg} onClose={()=>setViewImg(null)}/>
+    <h2 style={{margin:0,color:C.brown,fontSize:18}}>🧾 رفع فاتورة ميدانية</h2>
+    <Card>
+      <Inp label="عنوان الفاتورة" required value={form.title} onChange={e=>f("title",e.target.value)} placeholder="مشتريات مواد غذائية"/>
+      <Inp label="المبلغ (ج.س)" required type="number" value={form.amount} onChange={e=>f("amount",e.target.value)} placeholder="5000"/>
+      <Inp label="التاريخ" type="date" value={form.date} onChange={e=>f("date",e.target.value)}/>
+      <Inp label="ملاحظات" value={form.note} onChange={e=>f("note",e.target.value)} placeholder="تفاصيل إضافية..."/>
+      <FileBox label="صورة الفاتورة" color={C.green} preview={form.fileData} onFile={(d,n)=>setForm(p=>({...p,fileData:d,fileName:n}))}/>
+      <Solid bg={C.green} onClick={submit} disabled={loading||!form.title||!form.amount} full style={{padding:"13px",fontSize:15}}>{loading?"جاري الإرسال...":"إرسال الفاتورة ✓"}</Solid>
+    </Card>
+    {list.length>0&&<Card><h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>فواتيري المرفوعة</h3>
+      {list.slice().reverse().map((inv,i,arr)=><div key={i} style={{padding:"12px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:inv.fileData?8:0}}><div><div style={{fontWeight:700,fontSize:13}}>{inv.title}</div><div style={{fontSize:13,color:C.green,fontWeight:700}}>{inv.amount?.toLocaleString()} ج.س</div><div style={{fontSize:11,color:C.muted}}>{inv.date}</div>{inv.financeNote&&<div style={{fontSize:11,color:C.red}}>⚠ {inv.financeNote}</div>}</div><StatusBadge status={inv.status}/></div>
+        {inv.fileData&&<button onClick={()=>setViewImg(inv.fileData)} style={{background:`${C.green}15`,border:`1px solid ${C.green}30`,borderRadius:8,padding:"5px 12px",fontSize:11,color:C.brown,cursor:"pointer",fontWeight:600}}>🖼 عرض الفاتورة</button>}
+      </div>)}
+    </Card>}
+  </div>;
+}
+
+// ══════════════ APPROVALS ══════════════
+function ApproveItems({user,isSuper,type}){
+  const isR=type==="receipt";
+  const[items,setItems]=React.useState(isR?getReceipts():getInvoices());
+  const[filter,setFilter]=React.useState("pending");
+  const[noteModal,setNoteModal]=React.useState(null);const[noteText,setNoteText]=React.useState("");
+  const[viewImg,setViewImg]=React.useState(null);const[confirmDel,setConfirmDel]=React.useState(null);
+  const[toast,show]=useToast();
+  const sv=v=>{if(isR)saveReceipts(v);else saveInvoices(v);setItems(v);};
+  const decide=(id,status)=>{const upd=items.map(r=>r.id===id?{...r,status,approvedBy:user.name,approvedAt:new Date().toISOString().slice(0,10),financeNote:status==="rejected"?noteText:""}:r);sv(upd);setNoteModal(null);setNoteText("");show(status==="approved"?"✅ تم القبول":"❌ تم الرفض",status==="approved"?"success":"error");};
+  const del=id=>{sv(items.filter(r=>r.id!==id));setConfirmDel(null);show("🗑️ تم الحذف");};
+  const filtered=items.filter(r=>filter==="all"||r.status===filter);
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:14}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    <ImgView src={viewImg} onClose={()=>setViewImg(null)}/>
+    {confirmDel&&<Confirm title="حذف السجل" body={`حذف سجل بقيمة ${confirmDel.amount?.toLocaleString()} ج.س؟`} onOk={()=>del(confirmDel.id)} onCancel={()=>setConfirmDel(null)}/>}
+    {noteModal&&<Modal title="سبب الرفض" onClose={()=>setNoteModal(null)}><Inp label="سبب الرفض" value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="سبب الرفض للمستخدم"/><div style={{display:"flex",gap:10}}><Solid bg={C.red} onClick={()=>decide(noteModal,"rejected")} full>تأكيد الرفض</Solid><Outline color={C.muted} onClick={()=>setNoteModal(null)} full>إلغاء</Outline></div></Modal>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,color:C.brown,fontSize:18}}>{isR?"📬 إشعارات التحويل":"🧾 فواتير التكايا"}</h2><Badge label={`الكل: ${items.length}`} color={C.brown}/></div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[["pending","⏳ قيد المراجعة"],["approved","✅ مقبولة"],["rejected","❌ مرفوضة"],["all","الكل"]].map(([v,l])=><button key={v} onClick={()=>setFilter(v)} style={{padding:"7px 14px",borderRadius:20,border:`2px solid ${filter===v?C.brown:C.border}`,background:filter===v?C.brown:"transparent",color:filter===v?C.white:C.muted,fontSize:12,fontWeight:600,cursor:"pointer"}}>{l} ({items.filter(r=>v==="all"||r.status===v).length})</button>)}</div>
+    {filtered.length===0&&<p style={{color:C.muted,textAlign:"center",padding:"30px 0",fontSize:13}}>لا توجد بيانات</p>}
+    {filtered.slice().reverse().map(item=><Card key={item.id} style={{border:item.status==="pending"?`2px solid ${isR?C.orange:C.green}30`:""}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div style={{flex:1}}>
+          {!isR&&<div style={{fontWeight:700,fontSize:14,marginBottom:2}}>{item.title}</div>}
+          <div style={{fontWeight:700,fontSize:15,color:C.green}}>{item.amount?.toLocaleString()} ج.س</div>
+          <div style={{fontSize:11,color:C.muted,marginTop:2}}>{isR?`👤 ${item.userName} · 📅 ${item.date} · ${item.ref}`:`🏪 ${item.takia} · 👤 ${item.userName} · 📅 ${item.date}`}</div>
+          {item.note&&<div style={{fontSize:11,color:C.brown,marginTop:3}}>📝 {item.note}</div>}
+          {item.financeNote&&<div style={{fontSize:11,color:C.red,marginTop:3}}>⚠ {item.financeNote}</div>}
+          {item.approvedBy&&<div style={{fontSize:11,color:C.muted,marginTop:3}}>✍ {item.approvedBy} · {item.approvedAt}</div>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}><StatusBadge status={item.status}/>{isSuper&&<Outline color={C.red} onClick={()=>setConfirmDel(item)} sm>🗑️</Outline>}</div>
+      </div>
+      {item.fileData&&<div style={{marginBottom:item.status==="pending"?10:0}}><button onClick={()=>setViewImg(item.fileData)} style={{background:`${isR?C.orange:C.green}15`,border:`1px solid ${isR?C.orange:C.green}40`,borderRadius:10,padding:"8px 16px",fontSize:12,color:C.brown,cursor:"pointer",fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>🖼 عرض الصورة</button></div>}
+      {item.status==="pending"&&<div style={{display:"flex",gap:8,marginTop:8}}><Solid bg={C.green} onClick={()=>decide(item.id,"approved")} style={{flex:1,padding:"9px"}}>قبول ✓</Solid><Outline color={C.red} onClick={()=>{setNoteModal(item.id);setNoteText("");}} style={{flex:1,padding:"9px"}}>رفض ✗</Outline></div>}
+    </Card>)}
+  </div>;
+}
+
+// ══════════════ TRANSPARENCY ══════════════
+function Transparency({isSuper}){
+  const[receipts,setR]=React.useState(getReceipts());const[invoices,setI]=React.useState(getInvoices());
+  const[viewImg,setViewImg]=React.useState(null);const[confirmDel,setConfirmDel]=React.useState(null);
+  const[toast,show]=useToast();
+  const inc=receipts.filter(r=>r.status==="approved").reduce((s,r)=>s+r.amount,0);
+  const exp=invoices.filter(i=>i.status==="approved").reduce((s,i)=>s+i.amount,0);
+  const totalMeals=getMeals().reduce((s,m)=>s+parseInt(m.count||0),0);
+  const del=()=>{if(confirmDel.t==="r"){const u=receipts.filter(r=>r.id!==confirmDel.item.id);saveReceipts(u);setR(u);}else{const u=invoices.filter(i=>i.id!==confirmDel.item.id);saveInvoices(u);setI(u);}setConfirmDel(null);show("🗑️ تم الحذف");};
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    <ImgView src={viewImg} onClose={()=>setViewImg(null)}/>
+    {confirmDel&&<Confirm title="حذف السجل" body={`حذف سجل بقيمة ${confirmDel.item.amount?.toLocaleString()} ج.س؟`} onOk={del} onCancel={()=>setConfirmDel(null)}/>}
+    <h2 style={{margin:0,color:C.brown,fontSize:18}}>💎 الشفافية المالية</h2>
+    <div style={{background:`linear-gradient(135deg,${C.brown},${C.brownDk})`,borderRadius:20,padding:24,color:C.white,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,textAlign:"center"}}>
+      <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>الرصيد المتاح</div><div style={{fontSize:22,fontWeight:800,color:C.green}}>{(inc-exp).toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>ج.س</div></div>
+      <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>المداخيل</div><div style={{fontSize:22,fontWeight:800,color:"#A8E063"}}>{inc.toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>ج.س</div></div>
+      <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>الوجبات</div><div style={{fontSize:22,fontWeight:800,color:C.orange}}>{totalMeals.toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>وجبة</div></div>
+    </div>
+    <Card><h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📥 الإيداعات المعتمدة</h3>
+      {receipts.filter(r=>r.status==="approved").length===0&&<p style={{color:C.muted,textAlign:"center",fontSize:13,padding:"16px 0"}}>لا توجد بعد</p>}
+      {receipts.filter(r=>r.status==="approved").slice().reverse().map((r,i,arr)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{r.userName}</div><div style={{fontSize:11,color:C.muted}}>{r.date} · {r.ref}</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>{r.fileData&&<button onClick={()=>setViewImg(r.fileData)} style={{background:`${C.orange}15`,border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,color:C.brown,cursor:"pointer"}}>🖼</button>}<div style={{fontWeight:700,color:C.green,fontSize:14}}>+{r.amount?.toLocaleString()}</div>{isSuper&&<Outline color={C.red} onClick={()=>setConfirmDel({item:r,t:"r"})} sm>🗑️</Outline>}</div>
+      </div>)}
+    </Card>
+    <Card><h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📤 المصروفات المعتمدة</h3>
+      {invoices.filter(i=>i.status==="approved").length===0&&<p style={{color:C.muted,textAlign:"center",fontSize:13,padding:"16px 0"}}>لا توجد بعد</p>}
+      {invoices.filter(i=>i.status==="approved").slice().reverse().map((inv,i,arr)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{inv.title}</div><div style={{fontSize:11,color:C.muted}}>{inv.takia} · {inv.date}</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>{inv.fileData&&<button onClick={()=>setViewImg(inv.fileData)} style={{background:`${C.green}15`,border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,color:C.brown,cursor:"pointer"}}>🖼</button>}<div style={{fontWeight:700,color:C.orange,fontSize:14}}>-{inv.amount?.toLocaleString()}</div>{isSuper&&<Outline color={C.red} onClick={()=>setConfirmDel({item:inv,t:"i"})} sm>🗑️</Outline>}</div>
+      </div>)}
+    </Card>
+  </div>;
+}
+
+// ══════════════ MONTHLY REPORT ══════════════
+function MonthlyReport(){
+  const now=new Date();
+  const[month,setMonth]=React.useState(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`);
+  const receipts=getReceipts();const invoices=getInvoices();const meals=getMeals();const users=getUsers();
+
+  const mR=receipts.filter(r=>r.date?.startsWith(month));
+  const mI=invoices.filter(i=>i.date?.startsWith(month));
+  const mM=meals.filter(m=>m.date?.startsWith(month));
+  const mRApp=mR.filter(r=>r.status==="approved");
+  const mIApp=mI.filter(i=>i.status==="approved");
+  const totalIn=mRApp.reduce((s,r)=>s+r.amount,0);
+  const totalOut=mIApp.reduce((s,i)=>s+i.amount,0);
+  const totalMeals=mM.reduce((s,m)=>s+parseInt(m.count||0),0);
+  const contributors=users.filter(u=>u.role==="contributor");
+  const activeContribs=mRApp.map(r=>r.userId).filter((v,i,a)=>a.indexOf(v)===i).length;
+
+  // Group invoices by takia
+  const byTakia={};
+  mIApp.forEach(i=>{if(!byTakia[i.takia])byTakia[i.takia]={count:0,total:0};byTakia[i.takia].count++;byTakia[i.takia].total+=i.amount;});
+
+  const monthAr=new Date(month+"-01").toLocaleDateString("ar-SA",{year:"numeric",month:"long"});
+
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+      <h2 style={{margin:0,color:C.brown,fontSize:18}}>📊 التقرير الشهري</h2>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <input type="month" value={month} onChange={e=>setMonth(e.target.value)} style={{padding:"8px 12px",borderRadius:10,border:`2px solid ${C.border}`,fontSize:13,background:C.cream,fontFamily:"inherit",color:C.text}}/>
+        <Solid bg={C.brown} color={C.white} onClick={()=>window.print()} sm>🖨️ طباعة</Solid>
+      </div>
+    </div>
+
+    {/* PRINT HEADER */}
+    <div className="print-only" style={{textAlign:"center",marginBottom:20}}>
+      <h1 style={{color:C.brown,fontSize:22}}>مبادرة حِلّة بليلة</h1>
+      <h2 style={{color:C.muted,fontSize:16,fontWeight:400}}>التقرير الشهري — {monthAr}</h2>
+      <p style={{fontSize:12,color:C.muted}}>تاريخ الإصدار: {new Date().toLocaleDateString("ar-SA")}</p>
+    </div>
+
+    {/* SUMMARY BANNER */}
+    <div style={{background:`linear-gradient(135deg,${C.brown},${C.brownDk})`,borderRadius:20,padding:22,color:C.white}}>
+      <div style={{fontSize:13,opacity:.75,marginBottom:6,textAlign:"center"}}>تقرير شهر: {monthAr}</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,textAlign:"center"}}>
+        <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>صافي الرصيد</div><div style={{fontSize:22,fontWeight:800,color:totalIn-totalOut>=0?C.green:C.red}}>{(totalIn-totalOut).toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>ج.س</div></div>
+        <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>المداخيل</div><div style={{fontSize:22,fontWeight:800,color:"#A8E063"}}>{totalIn.toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>ج.س</div></div>
+        <div><div style={{opacity:.7,fontSize:11,marginBottom:4}}>المصروفات</div><div style={{fontSize:22,fontWeight:800,color:C.orange}}>{totalOut.toLocaleString()}</div><div style={{fontSize:10,opacity:.6}}>ج.س</div></div>
+      </div>
+    </div>
+
+    {/* KPI CARDS */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+      {[
+        {icon:"🤝",label:"مساهمون دفعوا هذا الشهر",val:activeContribs,of:contributors.length,color:C.green},
+        {icon:"🍲",label:"وجبات قُدِّمت",val:totalMeals.toLocaleString(),color:C.orange},
+        {icon:"📬",label:"إشعارات مرفوعة",val:mR.length,sub:`${mRApp.length} مقبول · ${mR.filter(r=>r.status==="pending").length} قيد المراجعة`,color:C.brown},
+        {icon:"🧾",label:"فواتير مرفوعة",val:mI.length,sub:`${mIApp.length} مقبول · ${mI.filter(i=>i.status==="pending").length} قيد المراجعة`,color:C.brownDk},
+      ].map((s,i)=><Card key={i} style={{borderBottom:`4px solid ${s.color}`,padding:16}}>
+        <div style={{fontSize:24,marginBottom:6}}>{s.icon}</div>
+        <div style={{fontSize:20,fontWeight:800,color:s.color}}>{s.val}{s.of&&<span style={{fontSize:13,color:C.muted}}> / {s.of}</span>}</div>
+        <div style={{fontSize:11,color:C.muted,marginTop:3}}>{s.label}</div>
+        {s.sub&&<div style={{fontSize:10,color:C.muted,marginTop:2}}>{s.sub}</div>}
+      </Card>)}
+    </div>
+
+    {/* RECEIPTS TABLE */}
+    <Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📥 تفاصيل الإيداعات المعتمدة ({mRApp.length})</h3>
+      {mRApp.length===0?<p style={{color:C.muted,textAlign:"center",fontSize:13,padding:"16px 0"}}>لا توجد إيداعات معتمدة في هذا الشهر</p>:
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr style={{background:C.creamDk}}>{["المساهم","المبلغ","التاريخ","رقم العملية","المُعتمِد"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:C.brown,borderBottom:`2px solid ${C.border}`}}>{h}</th>)}</tr></thead>
+        <tbody>{mRApp.map((r,i)=><tr key={i} style={{borderBottom:`1px solid ${C.border}`}}><td style={{padding:"8px 10px"}}>{r.userName}</td><td style={{padding:"8px 10px",color:C.green,fontWeight:700}}>{r.amount?.toLocaleString()} ج.س</td><td style={{padding:"8px 10px",color:C.muted}}>{r.date}</td><td style={{padding:"8px 10px",color:C.muted,fontSize:11}}>{r.ref}</td><td style={{padding:"8px 10px",color:C.muted,fontSize:11}}>{r.approvedBy||"—"}</td></tr>)}</tbody>
+        <tfoot><tr style={{background:C.creamDk}}><td colSpan="1" style={{padding:"8px 10px",fontWeight:700}}>الإجمالي</td><td style={{padding:"8px 10px",fontWeight:800,color:C.green}}>{totalIn.toLocaleString()} ج.س</td><td colSpan="3"></td></tr></tfoot>
+      </table>}
+    </Card>
+
+    {/* INVOICES TABLE */}
+    <Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>📤 تفاصيل المصروفات المعتمدة ({mIApp.length})</h3>
+      {mIApp.length===0?<p style={{color:C.muted,textAlign:"center",fontSize:13,padding:"16px 0"}}>لا توجد مصروفات معتمدة في هذا الشهر</p>:
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr style={{background:C.creamDk}}>{["الفاتورة","التكية","المبلغ","التاريخ","المُعتمِد"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:C.brown,borderBottom:`2px solid ${C.border}`}}>{h}</th>)}</tr></thead>
+        <tbody>{mIApp.map((inv,i)=><tr key={i} style={{borderBottom:`1px solid ${C.border}`}}><td style={{padding:"8px 10px",fontWeight:600}}>{inv.title}</td><td style={{padding:"8px 10px",color:C.muted}}>{inv.takia}</td><td style={{padding:"8px 10px",color:C.orange,fontWeight:700}}>{inv.amount?.toLocaleString()} ج.س</td><td style={{padding:"8px 10px",color:C.muted}}>{inv.date}</td><td style={{padding:"8px 10px",color:C.muted,fontSize:11}}>{inv.approvedBy||"—"}</td></tr>)}</tbody>
+        <tfoot><tr style={{background:C.creamDk}}><td colSpan="2" style={{padding:"8px 10px",fontWeight:700}}>الإجمالي</td><td style={{padding:"8px 10px",fontWeight:800,color:C.orange}}>{totalOut.toLocaleString()} ج.س</td><td colSpan="2"></td></tr></tfoot>
+      </table>}
+    </Card>
+
+    {/* BY TAKIA */}
+    {Object.keys(byTakia).length>0&&<Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>🏪 مصروفات التكايا</h3>
+      {Object.entries(byTakia).map(([takia,data],i,arr)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div><div style={{fontWeight:700,fontSize:13}}>{takia}</div><div style={{fontSize:11,color:C.muted}}>{data.count} فاتورة</div></div>
+        <div style={{fontWeight:800,color:C.orange,fontSize:14}}>{data.total.toLocaleString()} ج.س</div>
+      </div>)}
+    </Card>}
+
+    {/* MEALS */}
+    {mM.length>0&&<Card>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>🍲 تفاصيل الوجبات</h3>
+      <div style={{display:"flex",justifyContent:"space-between",padding:"10px",background:C.creamDk,borderRadius:12,marginBottom:12}}>
+        <span style={{fontWeight:700}}>إجمالي الوجبات هذا الشهر</span>
+        <span style={{fontWeight:800,color:C.green,fontSize:16}}>{totalMeals.toLocaleString()} وجبة</span>
+      </div>
+      {mM.slice().reverse().map((m,i,arr)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div><div style={{fontSize:13,fontWeight:600}}>{m.takia}</div><div style={{fontSize:11,color:C.muted}}>{m.date}{m.note&&` · ${m.note}`}</div></div>
+        <div style={{fontWeight:700,color:C.green}}>{parseInt(m.count).toLocaleString()} وجبة</div>
+      </div>)}
+    </Card>}
+
+    {/* SIGNATURE */}
+    <Card style={{marginTop:8}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{height:40,borderBottom:`1px dashed ${C.border}`,marginBottom:8}}></div>
+          <div style={{fontSize:12,color:C.muted}}>توقيع المدير</div>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{height:40,borderBottom:`1px dashed ${C.border}`,marginBottom:8}}></div>
+          <div style={{fontSize:12,color:C.muted}}>توقيع المراقب المالي</div>
+        </div>
+      </div>
+    </Card>
+  </div>;
+}
+
+// ══════════════ DATA MANAGEMENT ══════════════
+function DataMgmt(){
+  const[tab,setTab]=React.useState("receipts");
+  const[receipts,setR]=React.useState(getReceipts());const[invoices,setI]=React.useState(getInvoices());const[meals,setM]=React.useState(getMeals());
+  const[viewImg,setViewImg]=React.useState(null);const[confirmDel,setConfirmDel]=React.useState(null);
+  const[selected,setSelected]=React.useState(new Set());const[toast,show]=useToast();
+  const items=tab==="receipts"?receipts:tab==="invoices"?invoices:meals;
+  const toggle=id=>setSelected(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+  const toggleAll=()=>setSelected(s=>s.size===items.length&&items.length>0?new Set():new Set(items.map(i=>i.id)));
+  const delOne=(t,id)=>{if(t==="receipts"){const u=receipts.filter(r=>r.id!==id);saveReceipts(u);setR(u);}else if(t==="invoices"){const u=invoices.filter(i=>i.id!==id);saveInvoices(u);setI(u);}else{const u=meals.filter(m=>m.id!==id);saveMeals(u);setM(u);}setConfirmDel(null);show("🗑️ تم الحذف");setSelected(new Set());};
+  const delSel=()=>{if(tab==="receipts"){const u=receipts.filter(r=>!selected.has(r.id));saveReceipts(u);setR(u);}else if(tab==="invoices"){const u=invoices.filter(i=>!selected.has(i.id));saveInvoices(u);setI(u);}else{const u=meals.filter(m=>!selected.has(m.id));saveMeals(u);setM(u);}show(`🗑️ تم حذف ${selected.size} سجل`);setSelected(new Set());setConfirmDel(null);};
+  const delAll=()=>{if(tab==="receipts"){saveReceipts([]);setR([]);}else if(tab==="invoices"){saveInvoices([]);setI([]);}else{saveMeals([]);setM([]);}setConfirmDel(null);show("🗑️ تم مسح البيانات");setSelected(new Set());};
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:14}}>
+    <Toast msg={toast.msg} type={toast.type}/>
+    <ImgView src={viewImg} onClose={()=>setViewImg(null)}/>
+    {confirmDel&&<Confirm title={confirmDel.title} body={confirmDel.body} onOk={confirmDel.action} onCancel={()=>setConfirmDel(null)}/>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+      <h2 style={{margin:0,color:C.brown,fontSize:18}}>🗂️ إدارة البيانات</h2>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {selected.size>0&&<Solid bg={C.red} onClick={()=>setConfirmDel({title:`حذف ${selected.size} سجلات`,body:"حذف السجلات المحددة؟",action:delSel})} sm>🗑️ حذف المحدد ({selected.size})</Solid>}
+        <Outline color={C.red} onClick={()=>setConfirmDel({title:"مسح جميع البيانات",body:`مسح جميع ${tab==="receipts"?"الإشعارات":tab==="invoices"?"الفواتير":"سجلات الوجبات"}؟`,action:delAll})} sm>🗑️ مسح الكل</Outline>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[["receipts",`📬 الإشعارات (${receipts.length})`],["invoices",`🧾 الفواتير (${invoices.length})`],["meals",`🍲 الوجبات (${meals.length})`]].map(([v,l])=><button key={v} onClick={()=>{setTab(v);setSelected(new Set());}} style={{padding:"8px 16px",borderRadius:20,border:`2px solid ${tab===v?C.brown:C.border}`,background:tab===v?C.brown:"transparent",color:tab===v?C.white:C.muted,fontSize:12,fontWeight:700,cursor:"pointer"}}>{l}</button>)}</div>
+    {items.length===0?<Card style={{textAlign:"center",padding:32,color:C.muted,fontSize:13}}>لا توجد بيانات</Card>:
+    <Card style={{padding:0,overflow:"hidden"}}>
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:C.creamDk}}>
+        <input type="checkbox" checked={selected.size===items.length&&items.length>0} onChange={toggleAll} style={{width:16,height:16,cursor:"pointer"}}/>
+        <span style={{fontSize:12,color:C.muted,fontWeight:600}}>تحديد الكل</span>
+        <span style={{fontSize:11,color:C.muted,marginRight:"auto"}}>{selected.size} محدد من {items.length}</span>
+      </div>
+      {items.slice().reverse().map((item,i,arr)=><div key={item.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none",background:selected.has(item.id)?`${C.orange}08`:"transparent"}}>
+        <input type="checkbox" checked={selected.has(item.id)} onChange={()=>toggle(item.id)} style={{width:16,height:16,cursor:"pointer",flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0}}>
+          {tab==="receipts"&&<><div style={{fontWeight:700,fontSize:13,color:C.green}}>{item.amount?.toLocaleString()} ج.س</div><div style={{fontSize:11,color:C.muted}}>👤 {item.userName} · {item.date} · {item.ref}</div><StatusBadge status={item.status}/></>}
+          {tab==="invoices"&&<><div style={{fontWeight:700,fontSize:13}}>{item.title}</div><div style={{fontSize:12,color:C.green,fontWeight:700}}>{item.amount?.toLocaleString()} ج.س</div><div style={{fontSize:11,color:C.muted}}>🏪 {item.takia} · {item.date}</div><StatusBadge status={item.status}/></>}
+          {tab==="meals"&&<><div style={{fontWeight:700,fontSize:14,color:C.green}}>{parseInt(item.count||0).toLocaleString()} وجبة</div><div style={{fontSize:11,color:C.muted}}>🏪 {item.takia} · {item.date}</div>{item.note&&<div style={{fontSize:11,color:C.muted}}>{item.note}</div>}</>}
+        </div>
+        <div style={{display:"flex",gap:6,flexShrink:0}}>
+          {item.fileData&&<button onClick={()=>setViewImg(item.fileData)} style={{background:`${C.orange}15`,border:"none",borderRadius:8,padding:"5px 10px",fontSize:12,color:C.brown,cursor:"pointer"}}>🖼</button>}
+          <Outline color={C.red} sm onClick={()=>setConfirmDel({title:"حذف السجل",body:"حذف هذا السجل؟",action:()=>delOne(tab,item.id)})}>🗑️</Outline>
+        </div>
+      </div>)}
+    </Card>}
+  </div>;
+}
+
+// ══════════════ PROFILE ══════════════
+function Profile({user,onUpdate}){
+  const[form,setForm]=React.useState({old:"",nw:"",cf:""});const[msg,setMsg]=React.useState({text:"",ok:true});
+  const changePin=()=>{if(form.old!==user.pin){setMsg({text:"❌ الرمز الحالي غير صحيح",ok:false});return;}if(form.nw.length<4){setMsg({text:"الرمز يجب أن يكون 4 أرقام على الأقل",ok:false});return;}if(form.nw!==form.cf){setMsg({text:"الرمزان غير متطابقين",ok:false});return;}const upd=getUsers().map(u=>u.id===user.id?{...u,pin:form.nw}:u);saveUsers(upd);setMsg({text:"✅ تم تغيير الرمز",ok:true});setForm({old:"",nw:"",cf:""});onUpdate({...user,pin:form.nw});};
+  const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  return<div className="page" style={{display:"flex",flexDirection:"column",gap:16}}>
+    <h2 style={{margin:0,color:C.brown,fontSize:18}}>⚙️ حسابي</h2>
+    <Card>
+      <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:20}}>
+        <div style={{width:52,height:52,borderRadius:16,background:ROLES[user.role]?.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{ROLES[user.role]?.icon||"👤"}</div>
+        <div><div style={{fontWeight:800,fontSize:16}}>{user.name}</div><div style={{fontSize:12,color:C.muted}}>{user.phone}</div><Badge label={ROLES[user.role]?.label} color={ROLES[user.role]?.color}/>{user.takia&&<div style={{fontSize:12,color:C.green,marginTop:4}}>🏪 {user.takia}</div>}</div>
+      </div>
+      <hr style={{border:"none",borderTop:`1px solid ${C.border}`,margin:"0 0 18px"}}/>
+      <h3 style={{margin:"0 0 14px",color:C.brown,fontSize:14}}>🔐 تغيير الرمز السري</h3>
+      <Inp label="الرمز الحالي" type="password" value={form.old} onChange={e=>f("old",e.target.value)} placeholder="••••"/>
+      <Inp label="الرمز الجديد" type="password" value={form.nw} onChange={e=>f("nw",e.target.value)} placeholder="4 أرقام على الأقل"/>
+      <Inp label="تأكيد الرمز" type="password" value={form.cf} onChange={e=>f("cf",e.target.value)} placeholder="••••"/>
+      {msg.text&&<div style={{color:msg.ok?C.green:C.red,fontSize:12,marginBottom:12,padding:"8px 12px",background:msg.ok?`${C.green}12`:`${C.red}12`,borderRadius:8}}>{msg.text}</div>}
+      <Solid bg={C.brown} onClick={changePin} full>حفظ الرمز الجديد</Solid>
+    </Card>
+  </div>;
+}
+
+// ══════════════ NAV CONFIG ══════════════
+// admin & auditor share identical nav (SUPER role)
+const SUPER_NAV=[
+  {id:"home",       icon:"🏠", label:"الرئيسية"},
+  {id:"registrations",icon:"📝",label:"الطلبات",  b:"regs"},
+  {id:"users",      icon:"👤", label:"المستخدمون"},
+  {id:"approve-receipts",icon:"📬",label:"إشعارات",b:"r"},
+  {id:"approve-invoices", icon:"🧾",label:"فواتير",  b:"i"},
+  {id:"reminders",  icon:"🔔", label:"التذكيرات"},
+  {id:"report",     icon:"📊", label:"التقرير"},
+  {id:"data",       icon:"🗂️", label:"البيانات"},
+];
+const NAV_CFG={
+  admin:   SUPER_NAV,
+  auditor: SUPER_NAV,
+  finance:[
+    {id:"home",              icon:"🏠",label:"الرئيسية"},
+    {id:"approve-receipts",  icon:"📬",label:"إشعارات",b:"r"},
+    {id:"approve-invoices",  icon:"🧾",label:"فواتير",  b:"i"},
+    {id:"transparency",      icon:"💎",label:"الشفافية"},
+    {id:"profile",           icon:"⚙️",label:"حسابي"},
+  ],
+  contributor:[
+    {id:"home",         icon:"🏠",label:"الرئيسية"},
+    {id:"upload-receipt",icon:"📤",label:"رفع إشعار"},
+    {id:"transparency", icon:"💎",label:"الشفافية"},
+    {id:"profile",      icon:"⚙️",label:"حسابي"},
+  ],
+  takia:[
+    {id:"home",          icon:"🏠",label:"الرئيسية"},
+    {id:"log-meals",     icon:"🍲",label:"الوجبات"},
+    {id:"upload-invoice",icon:"🧾",label:"فاتورة"},
+    {id:"transparency",  icon:"💎",label:"الشفافية"},
+    {id:"profile",       icon:"⚙️",label:"حسابي"},
+  ],
+};
+
+// ══════════════ APP SHELL ══════════════
+function App(){
+  const[user,setUser]=React.useState(null);const[tab,setTab]=React.useState("home");
+  if(!user)return<LoginPage onLogin={u=>{setUser(u);setTab("home");}}/>;
+  const isSuper=SUPER(user.role);const isFinance=user.role==="finance";
+  const nav=NAV_CFG[user.role]||NAV_CFG.contributor;
+  const pR=getReceipts().filter(r=>r.status==="pending").length;
+  const pI=getInvoices().filter(i=>i.status==="pending").length;
+  const pReg=getRegs().filter(r=>r.status==="pending").length;
+  return<div style={{minHeight:"100vh",background:C.cream}}>
+    <style>{`@media print{header,nav,.no-print{display:none!important}.page{padding:0!important}}`}</style>
+    <header className="no-print" style={{background:C.brown,height:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 18px",position:"sticky",top:0,zIndex:100,boxShadow:`0 4px 24px ${C.brown}40`}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><Pot size={32}/><div><div style={{color:C.white,fontWeight:800,fontSize:15,lineHeight:1}}>حِلة</div><div style={{color:C.orange,fontSize:9}}>مبادرة حلة بليلة</div></div></div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{textAlign:"left"}}><div style={{color:C.white,fontSize:12,fontWeight:700}}>{user.name}</div><div style={{color:C.orange,fontSize:10}}>{ROLES[user.role]?.label}</div></div><button onClick={()=>setUser(null)} style={{background:`${C.white}20`,color:C.white,border:"none",width:32,height:32,borderRadius:10,cursor:"pointer",fontSize:14}}>🚪</button></div>
+    </header>
+    <main style={{maxWidth:680,margin:"0 auto",padding:"18px 14px 90px"}}>
+      {tab==="home"&&            <Dashboard user={user} onNav={setTab}/>}
+      {tab==="registrations"&&isSuper&&<RegApprovals user={user}/>}
+      {tab==="users"&&isSuper&&  <UserMgmt currentUser={user}/>}
+      {tab==="approve-receipts"&&(isSuper||isFinance)&&<ApproveItems user={user} isSuper={isSuper} type="receipt"/>}
+      {tab==="approve-invoices"&&(isSuper||isFinance)&&<ApproveItems user={user} isSuper={isSuper} type="invoice"/>}
+      {tab==="transparency"&&    <Transparency isSuper={isSuper}/>}
+      {tab==="reminders"&&isSuper&&<SendReminders/>}
+      {tab==="report"&&isSuper&& <MonthlyReport/>}
+      {tab==="data"&&isSuper&&   <DataMgmt/>}
+      {tab==="upload-receipt"&&user.role==="contributor"&&<UploadReceipt user={user}/>}
+      {tab==="log-meals"&&user.role==="takia"&&          <LogMeals user={user}/>}
+      {tab==="upload-invoice"&&user.role==="takia"&&     <UploadInvoice user={user}/>}
+      {tab==="profile"&&         <Profile user={user} onUpdate={setUser}/>}
+    </main>
+    <nav className="no-print" style={{position:"fixed",bottom:0,left:0,right:0,background:C.white,borderTop:`1px solid ${C.border}`,display:"flex",boxShadow:"0 -4px 20px rgba(109,47,34,.1)",zIndex:100}}>
+      {nav.map(n=>{
+        const bdg=n.b==="r"?pR:n.b==="i"?pI:n.b==="regs"?pReg:0;
+        return<button key={n.id} onClick={()=>setTab(n.id)} style={{flex:1,padding:"9px 2px 7px",border:"none",cursor:"pointer",background:tab===n.id?`${C.brown}10`:"transparent",borderTop:tab===n.id?`3px solid ${C.brown}`:"3px solid transparent",fontFamily:"inherit",position:"relative"}}>
+          <div style={{fontSize:16}}>{n.icon}</div>
+          {bdg>0&&<div style={{position:"absolute",top:5,right:"16%",background:C.red,color:"#fff",borderRadius:"50%",width:15,height:15,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #fff"}}>{bdg>9?"9+":bdg}</div>}
+          <div style={{fontSize:9,fontWeight:tab===n.id?700:500,color:tab===n.id?C.brown:C.muted,marginTop:2,whiteSpace:"nowrap"}}>{n.label}</div>
+        </button>;
+      })}
+    </nav>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
